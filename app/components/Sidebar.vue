@@ -43,9 +43,15 @@ const allNavigation: NavItem[] = [
     managerRoles: [ManagerRole.MAINTENANCE_MANAGER, ManagerRole.OPERATIONS_MANAGER]
   },
   {
-    label: 'Billing',
-    icon: 'i-heroicons-currency-dollar',
-    to: '/dashboard/billing',
+    label: 'Payments',
+    icon: 'i-heroicons-banknotes',
+    to: '/dashboard/payments',
+    managerRoles: [ManagerRole.PAYMENT_MANAGER, ManagerRole.OPERATIONS_MANAGER]
+  },
+  {
+    label: 'Invoices',
+    icon: 'i-heroicons-document-text',
+    to: '/dashboard/invoices',
     managerRoles: [ManagerRole.PAYMENT_MANAGER, ManagerRole.OPERATIONS_MANAGER]
   },
   {
