@@ -1,0 +1,153 @@
+<script setup lang="ts">
+import type { FormSubmitEvent } from '@nuxt/ui'
+import { createMaintenanceRequestSchema, type CreateMaintenanceRequestSchema } from '~/schemas/maintenance-request'
+import type { MaintenanceRequest, MaintenanceRequestPriority } from '~/types/maintenance-request'
+import type { Unit } from '~/types/unit'
+import type { Tenant } from '~/types/tenant'
+import type { ApiResponse } from '~/types'
+
+const props = defineProps<{
+  buildingId: string
+  userRole?: string
+}>()
+
+const emit = defineEmits<{
+  success: []
+  cancel: []
+}>()
+
+const { buildingApi } = useApi()
+const toast = useToast()
+
+const state = reactive<{
+  title: string
+  description: string
+  priority: MaintenanceRequestPriority
+  tenantId?: string
+}>({
+  title: '',
+  description: '',
+  priority: 'medium' as MaintenanceRequestPriority,
+  tenantId: undefined,
+})
+
+const loading = ref(false)
+const loadingTenants = ref(false)
+const tenants = ref<Tenant[]>([])
+
+const isManagerOrOwner = computed(() => props.userRole === 'manager' || !props.userRole)
+const selectedTenantUnit = computed(() =>
+  tenants.value.find(t => t.id === state.tenantId)?.unit
+)
+
+const priorityOptions = [
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
+  { value: 'urgent', label: 'Urgent' },
+]
+
+const tenantOptions = computed(() =>
+  tenants.value
+    .filter(t => t.status === 'active')
+    .map(t => ({
+      value: t.id,
+      label: `${t.name} ${t.unit ? `(${t.unit.unitNumber})` : ''}`,
+    }))
+)
+
+const selectedPriority = computed({
+  get: () => priorityOptions.find(p => p.value === state.priority),
+  set: (val: { value: string; label: string } | undefined) => {
+    state.priority = (val?.value as MaintenanceRequestPriority) || 'medium'
+  }
+})
+
+const selectedTenant = computed({
+  get: () => tenantOptions.value.find(t => t.value === state.tenantId),
+  set: (val: { value: string; label: string } | undefined) => {
+    state.tenantId = val?.value
+  }
+})
+
+async function fetchTenants() {
+  if (!isManagerOrOwner.value) return
+
+  loadingTenants.value = true
+  try {
+    const response = await buildingApi<ApiResponse<Tenant[]>>(
+      props.buildingId,
+      '/v1/app/tenants'
+    )
+    tenants.value = response.data
+  } catch (error: any) {
+    toast.add({ title: 'Failed to fetch tenants', description: error.message, color: 'error' })
+  } finally {
+    loadingTenants.value = false
+  }
+}
+
+async function onSubmit(event: FormSubmitEvent<CreateMaintenanceRequestSchema>) {
+  loading.value = true
+  try {
+    await buildingApi<ApiResponse<MaintenanceRequest>>(
+      props.buildingId,
+      '/v1/app/maintenance-requests',
+      {
+        method: 'POST',
+        body: event.data,
+      }
+    )
+    toast.add({ title: 'Maintenance request submitted successfully', color: 'success' })
+    emit('success')
+  } catch (error: any) {
+    toast.add({
+      title: 'Failed to submit request',
+      description: error.message,
+      color: 'error'
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchTenants()
+})
+</script>
+
+<template>
+  <UForm :schema="createMaintenanceRequestSchema" :state="state" @submit="onSubmit" class="space-y-4">
+    <UFormField v-if="isManagerOrOwner" label="Tenant" name="tenantId" required>
+      <USelectMenu v-model="selectedTenant" :items="tenantOptions" :loading="loadingTenants" placeholder="Select tenant"
+        class="w-full" />
+    </UFormField>
+
+    <UFormField label="Title" name="title" required>
+      <UInput v-model="state.title" placeholder="Brief description of the issue" :ui="{ root: 'w-full' }" />
+    </UFormField>
+
+    <UFormField label="Description" name="description" required>
+      <UTextarea v-model="state.description" placeholder="Provide detailed information about the issue" :rows="4"
+        :ui="{ root: 'w-full' }" />
+    </UFormField>
+
+    <div v-if="selectedTenantUnit" class="text-sm text-gray-600">
+      Unit: {{ selectedTenantUnit.unitNumber }}
+      <span v-if="selectedTenantUnit.floor">(Floor {{ selectedTenantUnit.floor }})</span>
+    </div>
+
+    <UFormField label="Priority" name="priority">
+      <USelectMenu v-model="selectedPriority" :items="priorityOptions" class="w-full" />
+    </UFormField>
+
+    <div class="flex gap-2 justify-end pt-4">
+      <UButton type="button" color="neutral" variant="ghost" @click="emit('cancel')">
+        Cancel
+      </UButton>
+      <UButton type="submit" color="primary" :loading="loading">
+        Submit Request
+      </UButton>
+    </div>
+  </UForm>
+</template>

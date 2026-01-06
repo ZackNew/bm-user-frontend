@@ -108,6 +108,14 @@ async function fetchBuildings() {
   try {
     const response = await api<ApiResponse<Building[]>>('/v1/app/buildings')
     buildings.value = response.data.filter(b => b.status === 'active')
+
+    // Initialize building assignments in edit mode
+    if (props.mode === 'edit' && props.manager?.buildings) {
+      state.buildingAssignments = props.manager.buildings.map(b => ({
+        buildingId: b.buildingId,
+        roles: b.roles,
+      }))
+    }
   } catch (error: any) {
     toast.add({ title: 'Failed to fetch buildings', description: error.message, color: 'error' })
   } finally {
@@ -172,8 +180,8 @@ onMounted(() => {
       <USelectMenu v-model="selectedStatus" :items="statusOptions" class="w-full" />
     </UFormField>
 
-    <div v-if="mode === 'create'" class="space-y-3">
-      <UFormField label="Building Assignments" name="buildingAssignments" required>
+    <div class="space-y-3">
+      <UFormField label="Building Assignments" name="buildingAssignments" :required="mode === 'create'">
         <div class="space-y-3">
           <div class="grid grid-cols-2 gap-3">
             <USelectMenu v-model="selectedBuilding" :items="buildingOptions" placeholder="Select building"
@@ -195,7 +203,7 @@ onMounted(() => {
           <div>
             <p class="font-medium text-sm">{{ getBuildingName(assignment.buildingId) }}</p>
             <p class="text-xs text-gray-600">{{assignment.roles.map(r => roleOptions.find(ro => ro.value ===
-              r)?.label).join(', ') }}</p>
+              r)?.label).join(', ')}}</p>
           </div>
           <UButton size="xs" color="error" variant="ghost" icon="i-heroicons-trash"
             @click="removeBuildingAssignment(assignment.buildingId)" />

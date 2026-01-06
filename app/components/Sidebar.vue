@@ -39,7 +39,7 @@ const allNavigation: NavItem[] = [
   {
     label: 'Maintenance',
     icon: 'i-heroicons-wrench-screwdriver',
-    to: '/dashboard/maintenance',
+    to: '/dashboard/maintenance-requests',
     managerRoles: [ManagerRole.MAINTENANCE_MANAGER, ManagerRole.OPERATIONS_MANAGER]
   },
   {

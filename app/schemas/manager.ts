@@ -27,6 +27,16 @@ export const updateManagerSchema = z.object({
     .optional(),
   phone: z.string().optional(),
   status: z.enum(["active", "inactive"]).optional(),
+  buildingAssignments: z
+    .array(
+      z.object({
+        buildingId: z.string(),
+        roles: z
+          .array(z.nativeEnum(ManagerRole))
+          .min(1, "Select at least one role per building"),
+      })
+    )
+    .optional(),
 });
 
 export type CreateManagerSchema = z.output<typeof createManagerSchema>;

@@ -43,4 +43,8 @@ export interface UpdateManagerRequest {
   password?: string;
   phone?: string;
   status?: "active" | "inactive";
+  buildingAssignments?: Array<{
+    buildingId: string;
+    roles: ManagerRole[];
+  }>;
 }
