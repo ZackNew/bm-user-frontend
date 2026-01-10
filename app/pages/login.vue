@@ -18,6 +18,7 @@ const state = reactive({
 const userTypeOptions = [
   { value: 'user', label: 'Building Owner' },
   { value: 'manager', label: 'Building Manager' },
+  { value: 'tenant', label: 'Tenant' },
 ]
 
 const selectedUserType = ref(userTypeOptions[0])
@@ -28,7 +29,11 @@ async function onSubmit(event: FormSubmitEvent<LoginSchema>) {
   try {
     await login(event.data.email, event.data.password, (selectedUserType.value?.value as UserType) || 'user')
     toast.add({ title: 'Login successful', color: 'success' })
-    router.push('/')
+    if (selectedUserType.value?.value === 'tenant') {
+      await router.push('/tenant/dashboard')
+    } else {
+      await router.push('/dashboard')
+    }
   } catch (error: any) {
     toast.add({
       title: 'Login failed',

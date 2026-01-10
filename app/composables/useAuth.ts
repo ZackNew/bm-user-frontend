@@ -1,16 +1,25 @@
-import type { User, Manager, LoginResponse, ApiResponse } from "~/types";
+import type {
+  User,
+  Manager,
+  LoginResponse,
+  Tenant,
+  ApiResponse,
+} from "~/types";
 
-type UserType = "user" | "manager";
+export type UserType = "user" | "manager" | "tenant";
 
 export const useAuth = () => {
   const config = useRuntimeConfig();
   const router = useRouter();
 
-  const userCookie = useCookie<User | Manager | null>("user", {
+  const userCookie = useCookie<User | Manager | Tenant | null>("user", {
     maxAge: 60 * 60 * 24 * 7,
   });
 
-  const user = useState<User | Manager | null>("user", () => userCookie.value);
+  const user = useState<User | Manager | Tenant | null>(
+    "user",
+    () => userCookie.value
+  );
   const token = useCookie("token", {
     maxAge: 60 * 60 * 24 * 7,
   });
@@ -30,7 +39,11 @@ export const useAuth = () => {
   ) => {
     try {
       const endpoint =
-        type === "user" ? "/v1/app/auth/login" : "/v1/manager/auth/login";
+        type === "user"
+          ? "/v1/app/auth/login"
+          : type === "manager"
+          ? "/v1/manager/auth/login"
+          : "/v1/tenant/auth/login";
 
       const response = await $fetch<ApiResponse<LoginResponse>>(
         `${config.public.apiUrl}${endpoint}`,
@@ -43,15 +56,16 @@ export const useAuth = () => {
       token.value = response.data.accessToken;
       refreshToken.value = response.data.refreshToken;
 
-      let userData: User | Manager;
+      let userData: User | Manager | Tenant;
       if (type === "user") {
         userData = response.data.user!;
-      } else {
-        // Merge mustResetPassword into manager object
+      } else if (type === "manager") {
         userData = {
           ...response.data.manager!,
           mustResetPassword: response.data.mustResetPassword || false,
         };
+      } else {
+        userData = response.data.tenant!;
       }
 
       user.value = userData;

@@ -7,6 +7,7 @@ export const createTenantSchema = z.object({
   phone: z.string().optional(),
   unitId: z.string().uuid().optional(),
   status: z.nativeEnum(TenantStatus).optional(),
+  password: z.string().min(6).optional(),
 });
 
 export const updateTenantSchema = z.object({

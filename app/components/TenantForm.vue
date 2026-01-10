@@ -25,13 +25,15 @@ const state = reactive<{
   email: string
   phone?: string
   unitId?: string
-  status: TenantStatus
+  status: TenantStatus,
+  password?: string
 }>({
   name: props.tenant?.name || '',
   email: props.tenant?.email || '',
   phone: props.tenant?.phone,
   unitId: props.tenant?.unitId,
   status: props.tenant?.status || TenantStatus.ACTIVE,
+  password: '',
 })
 
 const loading = ref(false)
@@ -145,6 +147,11 @@ onMounted(() => {
 
     <UFormField label="Status" name="status">
       <USelectMenu v-model="selectedStatus" :items="statusOptions" class="w-full" />
+    </UFormField>
+
+    <UFormField v-if="mode === 'create'" label="Password (Optional)" name="password">
+      <UInput v-model="state.password" type="password" placeholder="Leave empty for no password"
+        :ui="{ root: 'w-full' }" />
     </UFormField>
 
     <div class="flex gap-2 justify-end pt-4">
